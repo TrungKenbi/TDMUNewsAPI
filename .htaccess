@@ -1,0 +1,8 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/inftechm/tdmu-news"
+PassengerBaseURI "/"
+PassengerNodejs "/home/inftechm/nodevenv/tdmu-news/12/bin/node"
+PassengerAppType node
+PassengerStartupFile index.js
+PassengerAppLogFile "/home/inftechm/logs/tdmu-news.log"
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
