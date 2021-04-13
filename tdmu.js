@@ -2,6 +2,8 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
+const TDMU_BASE_URL = 'https://tdmu.edu.vn';
+
 async function cURL(url)
 {
     return axios.get(url)
@@ -27,11 +29,11 @@ async function getNewsTDMU(startID = 0, category = null) {
 
     let $ = await cheerio.load(res.data);
     $('body > div.new_item').each(function (index) {
-        let name = $(this).find('div.row > div.col-lg-12 > h4.new_item_title > a').text();
-        let link = $(this).find('div.row > div.col-lg-12 > h4.new_item_title > a').attr('href');
-        let img = encodeURI($(this).find('div.row > div.col-lg-12 > img.new_item_img').attr('src'));
-        let desc = $(this).find('div.row > div.col-lg-12 > span.new_item_desc').text();
-        let timeAndView = $(this).find('div.row > div.col-lg-12 > span.new_item_time').text().trim();
+        let name = $(this).find('div.col-lg-6 > h4.new_item_title > a').text();
+        let link = $(this).find('div.col-lg-6 > h4.new_item_title > a').attr('href');
+        let img = $(this).find('div.col-lg-6 > img.new_item_img').attr('src');
+        let desc = $(this).find('div.col-lg-6 > span.new_item_desc').text();
+        let timeAndView = $(this).find('div.col-lg-6 > span.new_item_time').text().trim();
 
         let _timeAndView = timeAndView.split(' —  ');
         let time = _timeAndView[0];
@@ -40,12 +42,14 @@ async function getNewsTDMU(startID = 0, category = null) {
         let _link = link.split('/');
         let cat = _link[2];
         let id = _link[3];
+		
+		img = img.replace('184x115_goc_', '');
 
         let news_item = {
             name: name,
             desc: desc,
-            img: img,
-            link: link,
+            img: TDMU_BASE_URL + img,
+            link: TDMU_BASE_URL + link,
             time: time,
             view: view,
             cat_name: cat,
@@ -88,5 +92,102 @@ async function getNewsTDMUById(newsId) {
     };
 }
 
+
+async function getTKB(user) {
+    let schedule = [];
+    let URL = "https://dkmh.tdmu.edu.vn/default.aspx?page=thoikhoabieu&sta=0&id=" + user;
+
+    let res = await cURL(URL);
+    if (res.status != 200)
+        return schedule;
+
+    let $ = await cheerio.load(res.data);
+	
+	let contentStudent = $('#ctl00_ContentPlaceHolder1_ctl00_lblContentTenSV').text().split('-');
+
+	let ele = $('#ctl00_ContentPlaceHolder1_ctl00_lblContentLopSV');
+	
+	let classStudent;
+	
+	if (ele)
+		classStudent = $('#ctl00_ContentPlaceHolder1_ctl00_lblContentLopSV').text().split('-');
+	else
+		classStudent = ['', '', '', ''];
+
+	let parentTable = $('#ctl00_ContentPlaceHolder1_ctl00_Table1').children('tbody').children();
+	
+	parentTable.map(function(){
+		$(this).children().map(function(){
+			let element = $(this).attr('onmouseover');
+			if (element){
+				let item = element.split(`','`);
+				let startPeriod = parseInt(item[6]);
+				let numberOfPeriods = parseInt(item[7]);
+				schedule.push({
+					subjectName: item[1].split('(')[0].trim(),
+					SubjectCode: item[2],
+					dayOfWeekVi: item[3],
+					dayOfWeek: dayOfWeekViToNum(item[3]),
+					roomName: item[5],
+					teacherName: item[8],
+					timeStart: startPeriod,
+					timeStop: startPeriod + numberOfPeriods - 1,
+				});
+			}
+		});              
+	});
+	
+	schedule.sort(function(a, b) {
+		if (a.dayOfWeek === 0)
+			return 1;
+		if (b.dayOfWeek === 0)
+			return -1;
+		return a.dayOfWeek - b.dayOfWeek;
+	});
+
+	let result = {
+		studentInfo: {
+			id: user,
+			name: contentStudent[0].trim(),
+			birthday: contentStudent.length > 1 ? contentStudent[1].split(':')[1] : '',
+			class: classStudent.length > 0 ? classStudent[0].trim() : '',
+			major: classStudent.length > 1 ? classStudent[1].split(':')[1].trim() : '',
+			department: classStudent.length > 2 ? classStudent[2].split(':')[1].trim() : ''
+		},
+		timetable: schedule
+	};
+	return result;
+}
+
+
+function dayOfWeekViToNum (dayOfWeekVi)
+{
+    switch (dayOfWeekVi) {
+
+        case 'Thứ Hai':
+            return 1;
+
+        case 'Thứ Ba':
+            return 2;
+
+        case 'Thứ Tư':
+            return 3;
+
+        case 'Thứ Năm':
+            return 4;
+
+        case 'Thứ Sáu':
+            return 5;
+
+        case 'Thứ Bảy':
+            return 6;
+
+        default:
+        case 'Chủ Nhật':
+            return 0;
+    }
+}
+
 module.exports.getNewsTDMU = getNewsTDMU;
 module.exports.getNewsTDMUById = getNewsTDMUById;
+module.exports.getTKB = getTKB;

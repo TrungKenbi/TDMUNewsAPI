@@ -5,7 +5,7 @@ var tdmu = require('../tdmu');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+  res.render('index', { title: 'TDMU Unofficial API' });
 });
 
 router.get('/api/news', async (req, res) => {
@@ -25,6 +25,17 @@ router.get('/api/news/:newsId', async (req, res) => {
   try {
     let news = await tdmu.getNewsTDMUById(req.params.newsId);
     res.json(news);
+  } catch (error) {
+    res.status(400).send(error);
+    console.log(error);
+  }
+
+});
+
+router.get('/api/student/:studentId', async (req, res) => {
+  try {
+    let schedule = await tdmu.getTKB(req.params.studentId);
+    res.json(schedule);
   } catch (error) {
     res.status(400).send(error);
     console.log(error);
