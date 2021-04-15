@@ -189,6 +189,105 @@ async function getMark(studentCode, password) {
   return getSession(studentCode, password);
 }
 
+async function getExam(studentCode, password) {
+	let exams = [];
+
+  axiosCookieJarSupport(axios);
+  const cookieJar = new tough.CookieJar();
+
+  let viewState = "";
+  let viewStateGenerator = "";
+
+  await axios
+    .get("https://dkmh.tdmu.edu.vn/", {
+      jar: cookieJar,
+      withCredentials: true,
+    })
+    .then(async (response) => {
+      let $ = await cheerio.load(response.data, {
+        normalizeWhitespace: true,
+        xmlMode: true,
+      });
+
+      viewState = $("#__VIEWSTATE").val();
+      viewStateGenerator = $("#__VIEWSTATEGENERATOR").val();
+
+      let dataForm = qs.stringify({
+        '__VIEWSTATE': viewState,
+        '__VIEWSTATEGENERATOR': viewStateGenerator,
+        'ctl00$ContentPlaceHolder1$ctl00$ucDangNhap$txtTaiKhoa': studentCode,
+        'ctl00$ContentPlaceHolder1$ctl00$ucDangNhap$txtMatKhau': password,
+        'ctl00$ContentPlaceHolder1$ctl00$ucDangNhap$btnDangNhap': "Đăng Nhập",
+      });
+
+      await axios
+        .post("https://dkmh.tdmu.edu.vn/default.aspx", dataForm, {
+          headers: {
+            'accept':
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            'content-type': "application/x-www-form-urlencoded",
+          },
+          jar: cookieJar,
+          withCredentials: true,
+        })
+        .then(async (res) => {
+          $ = await cheerio.load(res.data, {
+            normalizeWhitespace: true,
+            xmlMode: true,
+          });
+
+
+          await axios
+            .get(
+              "https://dkmh.tdmu.edu.vn/Default.aspx?page=xemlichthi",
+              {
+                jar: cookieJar,
+                withCredentials: true,
+              }
+            )
+            .then(async (res) => {
+              $ = await cheerio.load(res.data, {
+                normalizeWhitespace: true,
+                xmlMode: true,
+              });
+			  
+			// LAY DIEM KIEM TRA
+				
+			let parentTable = $("#ctl00_ContentPlaceHolder1_ctl00_gvXem").children();
+
+			parentTable.map(function () {
+				let row = [];
+				$(this).children('td').map(function (index, element) {
+					row.push($(this).text().trim());
+				});
+
+				let exam = {
+					id: row[1],
+					name: row[2],
+					group: row[3],
+					num: row[4],
+					day: row[5],
+					time: row[6],
+					minutes: row[7],
+					room: row[8],
+					type: row[9],
+				};
+
+				exams.push(exam);
+			});
+			// END LAY DIEM KIEM TRA
+
+            });
+
+
+
+
+        });
+    });
+
+	return exams;
+  }
+
 async function getSession(username, password) {
 	let marks = [];
 
@@ -347,3 +446,4 @@ module.exports.getNewsTDMU = getNewsTDMU;
 module.exports.getNewsTDMUById = getNewsTDMUById;
 module.exports.getTKB = getTKB;
 module.exports.getMark = getMark;
+module.exports.getExam = getExam;

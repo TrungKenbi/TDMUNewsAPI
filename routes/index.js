@@ -52,4 +52,16 @@ router.get("/api/mark", async (req, res) => {
   }
 });
 
+router.get("/api/exam", async (req, res) => {
+  let studentId = req.query.student_id;
+  let password = req.query.password;
+  try {
+    let schedule = await tdmu.getExam(studentId, password);
+    res.json(schedule);
+  } catch (error) {
+    res.status(400).send(error);
+    console.log(error);
+  }
+});
+
 module.exports = router;
