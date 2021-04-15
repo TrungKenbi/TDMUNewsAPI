@@ -285,7 +285,7 @@ async function getExam(studentCode, password) {
         });
     });
 
-	return exams;
+	return exams.slice(1);
   }
 
 async function getSession(username, password) {
