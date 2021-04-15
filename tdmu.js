@@ -65,8 +65,8 @@ async function getNewsTDMU(startID = 0, category = null) {
     let news_item = {
       name: name,
       desc: desc,
-      img: TDMU_BASE_URL + img,
-      link: TDMU_BASE_URL + link,
+      img: 'https://tdmu.edu.vn' + img,
+      link: 'https://tdmu.edu.vn' + link,
       time: time,
       view: view,
       cat_name: cat,
@@ -92,7 +92,10 @@ async function getNewsTDMUById(newsId) {
     xmlMode: true,
   });
   const title = $("div.nd-tintuc-phai > h2").text();
-  const content = $("div.noidungbaidang").html();
+  let content = $("div.noidungbaidang").html();
+
+  content = content.replace(/<\s*img [^\>]*src\s*=\s*([\"|\'])(.*?)[\"|\'][^']*?>/gi, "<img src=\"https://tdmu.edu.vn\$2\">");
+
   const time_view = $(
     "#renderBody > div > div > div:nth-child(2) > div.col-xs-12.col-sm-9.col-md-9.nd-tintuc-phai > span"
   )
